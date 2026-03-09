@@ -1,0 +1,11 @@
+### Define Modkit path
+modkit="/N/slate/justren/modkit_dir/dist_modkit_v0.5.1_8fa79e3/modkit"
+
+$modkit --version
+
+$modkit pileup \
+/N/project/ICMH/CCBB/YunlongLiu/nanopore_manuscript_fall2024/data/Dec2024_comparison/Nanopore/dir_of_dir_crams/Su349_BTRC_51_Control_M_analysis/Su349_BTRC_51_Control_M.haplotagged.cram \
+/geode2/home/u040/justren/Quartz/modkit_outputs/output.bed.gz \
+--cpg \
+--reference /geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
+--log-filepath /geode2/home/u040/justren/Quartz/modkit_logs/modkit_log1
