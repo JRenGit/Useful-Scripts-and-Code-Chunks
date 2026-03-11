@@ -1,0 +1,15 @@
+check_mod <- function(dt, target_mod) {
+  count <- dt[.(target_mod), .N, nomatch = 0]
+  
+  if (count == 0) {
+    stop(sprintf("!!! ERROR: No rows found for modification: '%s' !!!", target_mod))
+  } else {
+    message(sprintf("Found %s rows for modification: '%s'", format(count, big.mark=","), target_mod))
+  }
+  
+  return(dt[.(target_mod)])
+}
+
+subset_dt <- check_mod(dt, "a")
+
+### dt in the function never changes, just swap dt in the final line to the sample in question
