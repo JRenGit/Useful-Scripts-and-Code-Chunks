@@ -5,7 +5,7 @@ $modkit --version
 
 $modkit pileup \
 /N/project/ICMH/CCBB/YunlongLiu/nanopore_manuscript_fall2024/data/Dec2024_comparison/Nanopore/dir_of_dir_crams/Su349_BTRC_51_Control_M_analysis/Su349_BTRC_51_Control_M.haplotagged.cram \
-/geode2/home/u040/justren/Quartz/modkit_outputs/output.bed.gz \
---cpg \
+/N/slate/justren/modkit_outputs/output.bed.gz \
+--motif A 0 \
 --reference /geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
---log-filepath /geode2/home/u040/justren/Quartz/modkit_logs/modkit_log1
+--log-filepath /N/slate/justren/modkit_logs/test_log.txt
