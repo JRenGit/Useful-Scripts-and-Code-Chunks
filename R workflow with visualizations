@@ -1,0 +1,120 @@
+library(data.table)
+library(ggplot2)
+library(AnnotationHub)
+library(GenomicRanges)
+
+### Set up the data
+Su760_251_AUD_M <- fread(cmd = "zcat /N/slate/justren/modkit_outputs/output.bed.gz | awk '$1 == \"chr2\"'")
+
+cols <- c("chromosome", "start_pos", "end_pos", "modification", "read_count", "strandedness", "start_thick", "end_thick", "color", "coverage", "percentage_methylation", "n_mod", "n_canonical", "n_othermod", "n_delete", "n_fail", "n_diff", "n_nocall")
+colnames(Su760_251_AUD_M) <- cols
+
+
+### Parse for "a"
+setkey(Su760_251_AUD_M, "modification")
+
+check_mod <- function(dt, target_mod) {
+  count <- dt[.(target_mod), .N, nomatch = 0]
+  
+  if (count == 0) {
+    stop(sprintf("!!! ERROR: No rows found for modification: '%s' !!!", target_mod))
+  } else {
+    message(sprintf("Found %s rows for modification: '%s'", format(count, big.mark=","), target_mod))
+  }
+  
+  return(dt[.(target_mod)])
+}
+
+subset_Su760 <- check_mod(Su760_251_AUD_M, "a")
+
+### Isolate the modification of interest
+a_Su760 <- Su760_251_AUD_M["a"]
+
+### Calculate modification parameters
+total_amod <- a_Su760[, .(x=sum(n_mod))]
+total_coverage <- a_Su760[, .(x=sum(read_count))]
+mean_coverage <- a_Su760[, .(x=mean(read_count))]
+global_methylation=(total_amod/total_coverage)
+print(global_methylation)
+
+### Filter out excessive 0% modification reads
+setkey(a_Su760, "percentage_methylation")
+nonzero_a_Su760 <- a_Su760[percentage_methylation !=(0)]
+
+### Remove potential processing artifacts
+setkey(nonzero_a_Su760, "read_count")
+no_outlier_Su760 <- nonzero_a_Su760[read_count < 300]
+
+### Clamp at both ends and reanalyze
+ideal_Su760 <- nonzero_a_Su760[.(10:300), nomatch = NULL]
+cleaned_amod <- ideal_Su760[, .(x=sum(n_mod))]
+cleaned_coverage <- ideal_Su760[, .(x=sum(read_count))]
+cleaned_mean_coverage <- ideal_Su760[, .(x=mean(read_count))]
+cleaned_global_methylation=(cleaned_amod/cleaned_coverage)
+print(cleaned_global_methylation)
+
+hypothetical_Su760 <- nonzero_a_Su760[.(5:20), nomatch = NULL]
+
+
+### Visualize the modification probabilities
+ggplot(no_outlier_Su760, aes(x = percentage_methylation)) +
+  geom_density(fill = "firebrick", alpha = 0.5) +
+  theme_classic() +
+  labs(
+    title = "Methylation Density",
+    x = "Modification Probability (%)",
+    y = "Density"
+  )
+
+ggplot(hypothetical_Su760, aes(x = percentage_methylation)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "white") +
+  theme_minimal() +
+  labs(
+    title = "Distribution of Methylation Probabilities 1X - 300X",
+    x = "Modification Percentage (0 - 100)",
+    y = "Count of Bases (Sites)"
+  )
+
+ggplot(hypothetical_Su760, aes(x = read_count, y = percentage_methylation)) + geom_bin2d() + scale_fill_viridis_c()
+
+ggplot(hypothetical_Su760, aes(x = n_mod, y = n_canonical)) +
+  geom_bin2d(bins = 50) +
+  scale_fill_viridis_c(trans = "log10") + # Log scale helps see the outliers
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Modified vs. Canonical Counts", caption = "Red line represents 50% methylation")
+
+ggplot(hypothetical_Su760, aes(x = start_pos, y = percentage_methylation)) +
+  geom_density_2d(color = "steelblue") +
+  geom_point(shape = ".", color = "black") + 
+  scale_x_continuous(labels = scales::label_number(scale = 1e-6, suffix = "Mb")) +
+  theme_minimal() +
+  labs(
+    title = "Chromosome 2: 6mA Density Contours",
+    subtitle = "Showing where methylation events cluster geographically",
+    x = "Position (Mb)",
+    y = "% Methylation"
+  )
+
+ggplot(hypothetical_Su760[start_pos > 90e6 & start_pos < 100e6], aes(x = start_pos, y = percentage_methylation)) +
+  geom_point(aes(color = read_count), size = 1) +
+  scale_color_viridis_c() +
+  theme_minimal() +
+  labs(title = "Zoom: Chromosome 2 Centromeric Region",
+       subtitle = "Focusing on the 90Mb-100Mb high-density cluster",
+       x = "Position (bp)", y = "% Methylation")
+
+
+
+### Assume a conservative background error rate of 5%
+error_rate <- 0.05
+
+### Calculate a p-value for every site
+Su760_251_AUD_M[, p_val := mapply(function(k, n) {
+  binom.test(k, n, p = error_rate, alternative = "greater")$p.value
+}, n_mod, (n_mod + n_canonical))]
+
+### Adjust for multiple testing
+Su760_251_AUD_M[, p_adj := p.adjust(p_val, method = "BH")]
+
+### Filter for significance (e.g., FDR < 0.05)
+significant_sites <- Su760_251_AUD_M[p_adj < 0.05]
