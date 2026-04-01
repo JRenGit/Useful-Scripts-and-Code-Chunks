@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Extracts a specific line from a CSV, converts to Tab-separated for 'read'
+get_sample_info() {
+    local manifest=$1
+    local task_id=$2
+    # Skip header (1d), then pick the line matching the Task ID
+    local line=$(sed 1d "$manifest" | sed -n "${task_id}p")
+
+    if [ -z "$line" ]; then
+        echo "ERROR: Task ID $task_id out of bounds for manifest." >&2
+        exit 1
+    fi
+
+    # Change commas to tabs for the internal 'read' command
+    echo "$line" | tr ',' '\t'
+}
