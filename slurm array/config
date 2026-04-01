@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Get the directory where this config.sh lives
+# (e.g., /N/slate/justren/6mA_modkit/slurm_setup)
+SET_UP_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# The Project Root is one level up
+# (e.g., /N/slate/justren/6mA_modkit)
+export PROJECT_ROOT=$(cd "$SET_UP_DIR/.." && pwd)
+
+# --- Software ---
+export MODKIT_BIN="/N/slate/justren/modkit_dir/dist_modkit_v0.5.1_8fa79e3/modkit"
+
+# --- Reference ---
+export REF_GENOME="/geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+
+# --- Key Files ---
+export MANIFEST="${SET_UP_DIR}/input_manifest.csv"
+
+# Load modules required for the cluster environment
+module load htslib/1.18
+module load samtools/1.1
