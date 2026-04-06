@@ -1,0 +1,22 @@
+rule modkit_6mA:
+    input:
+        bam = "data/{sample}.bam",
+        ref = "reference/{sample}.fa"
+    output:
+        log = "output/{sample}.txt",
+        bed = "output/{sample}.bed.gz"
+    shell:
+        """
+        MODKIT="/N/slate/justren/modkit_dir/dist_modkit_v0.5.1_8fa79e3/modkit"
+        
+        $MODKIT pileup \
+            {input.bam} \
+            - \
+            --region x \
+            --motif A 0 \
+            --reference {input.ref} \
+            --log-filepath {output.log} \
+            | bgzip -c > {output.bed}
+        """
+
+rule 
