@@ -1,1 +1,0 @@
-cols <- c("chromosome", "start_pos", "end_pos", "modification", "read_count", "strandedness", "start_thick", "end_thick", "color", "coverage", "percentage_methylation", "n_mod", "n_canonical", "n_othermod", "n_delete", "n_fail", "n_diff", "n_nocall")
