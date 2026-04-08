@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#SBATCH -J Su732_mosdepth
+#SBATCH --partition=debug
+#SBATCH -o filename_%j.txt
+#SBATCH -e filename_%j.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=justren@iu.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=1:00:00
+#SBATCH --mem=16G
+#SBATCH -A r00302
+#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --error=logs/%x_%A_%a.err
+
+module load conda
+
+source /N/soft/rhel8/conda/25.3.0/etc/profile.d/conda.sh
+
+conda activate bio_tools
+
+mosdepth --threads 4 --by 500 Su732_output /N/slate/justren/remade_bams/Su732_revert.bam
