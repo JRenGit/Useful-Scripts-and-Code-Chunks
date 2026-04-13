@@ -16,4 +16,7 @@
 
 module load samtools
 
-srun samtools view -T fasta.sequence -b -o output.bam input.cram
+srun samtools view -h -b -q 20 \
+-T /geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
+-o /N/slate/justren/remade_bams/Su780_revert.bam \
+/N/scratch/cmguser/production/download/e848b79b-2ff6-4db9-9573-4ea3e5f40e6c/Su780_BTRC_267_AUD_M.haplotagged.cram
