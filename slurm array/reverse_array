@@ -22,14 +22,16 @@ module load samtools
 
 REF=/geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 CRAM_BASE=/N/scratch/cmguser/production/download
+BAM_BASE=/N/slate/justren/remade_bams
 MANIFEST=manifest.csv
 
 # ── Parse manifest row for this task ────────────────────────────────────────
 SAMPLE=$(awk     -F',' -v row="${SLURM_ARRAY_TASK_ID}" 'NR==row {print $1}' ${MANIFEST})
 CRAM_SUB=$(awk   -F',' -v row="${SLURM_ARRAY_TASK_ID}" 'NR==row {print $2}' ${MANIFEST})
-OUTPUT_BAM=$(awk -F',' -v row="${SLURM_ARRAY_TASK_ID}" 'NR==row {print $3}' ${MANIFEST})
+BAM_FILE=$(awk   -F',' -v row="${SLURM_ARRAY_TASK_ID}" 'NR==row {print $3}' ${MANIFEST})
 
 CRAM="${CRAM_BASE}/${CRAM_SUB}"
+OUTPUT_BAM="${BAM_BASE}/${BAM_FILE}"
 
 echo "Sample     : ${SAMPLE}"
 echo "CRAM       : ${CRAM}"
