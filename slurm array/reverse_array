@@ -22,7 +22,7 @@ module load samtools
 
 REF=/geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 CRAM_BASE=/N/scratch/cmguser/production/download
-BAM_BASE=/N/slate/justren/remade_bams
+BAM_BASE=/N/project/ICMH/Projects/project_clock/data/filtered_reversed_bams
 MANIFEST=manifest.csv
 
 # ── Parse manifest row for this task ────────────────────────────────────────
