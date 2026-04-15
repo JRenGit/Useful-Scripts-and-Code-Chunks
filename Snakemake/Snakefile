@@ -1,3 +1,19 @@
+configfile: "config.yaml"
+SAMPLES = config["samples"]
+
+rule all:
+    input:
+        expand(
+            "{outdir}/{sample}/methylation/{sample}.bed.gz",
+            outdir=config["output_dir"],
+            sample=SAMPLES,
+    ),
+    expand(
+        "{outdir}/{sample}/methylation/{sample}_modkit_summary.txt",
+            outdir=config["output_dir"],
+            sample=SAMPLES,
+    ),
+
 rule modkit_6mA:
     input:
         bam = "data/{sample}.bam",
