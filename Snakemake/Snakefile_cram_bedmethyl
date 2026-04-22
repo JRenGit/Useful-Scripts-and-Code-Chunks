@@ -64,6 +64,8 @@ rule index_bam:
     resources:
         mem_mb=8000,
         runtime=120,
+    envmodules:
+        "samtools",
     log:
         "logs/{sample}_index.log",
     shell:
@@ -81,6 +83,9 @@ rule modkit_pileup_6mA:
     resources:
         mem_mb=32000,
         runtime=2880,
+    envmodules:
+        "samtools",
+        "htslib",
     log:
         "logs/{sample}_modkit_pileup.log",
     shell:
