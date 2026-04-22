@@ -22,7 +22,7 @@ mkdir -p logs
 REF=/geode2/home/u040/justren/Quartz/fasta_ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 BAM_BASE=/N/project/ICMH/Projects/project_clock/data/filtered_reversed_bams
 OUTPUT_BASE=/N/project/ICMH/Projects/project_clock/data/MODKIT_PILEUP_6mA
-MODKIT=/N/slate/justren/modkit_dir/dist_modkit_v0.5.1_8fa79e3
+MODKIT=/N/slate/justren/modkit_dir/dist_modkit_v0.5.1_8fa79e3/modkit
 MANIFEST=/N/slate/justren/shell_scripts/manifest760_597.csv
 
 # Parse manifest row for this task
