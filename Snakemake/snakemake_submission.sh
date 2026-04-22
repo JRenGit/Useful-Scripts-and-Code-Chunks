@@ -14,10 +14,11 @@ set -e
 set -o pipefail
 mkdir -p logs
 
-source activate snakemake
+module load conda/25.3.0
+conda activate snakemake
 
 snakemake \
-  --slurm \
+  --executor slurm \
   --jobs 10 \
   --use-envmodules \
   --default-resources \
