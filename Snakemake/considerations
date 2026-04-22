@@ -1,0 +1,5 @@
+# may not be optimal to call the Snakefile using a slurm submission script - snakemake logs references this problem
+# consider submitting only 1 Snakefile argument from the commandline using tmux to ensure the job stays running while offline
+# where are the best "logical" breakpoints in Snakefiles -> converting cram to bam and indexing -> modkit -> bgzipped bedmethyl seems like a logical chunk
+    # basecalling -> alignment also seems like a good ruleset that I can pull into the master file later??
+    # keep R as an isolated rule set, can add analysis parameters as needed
