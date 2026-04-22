@@ -9,8 +9,6 @@
 #SBATCH --mem=64G
 #SBATCH --time=48:00:00
 #SBATCH --array=1-10
-#SBATCH --output=logs/cram_to_bam_%A_%a.out
-#SBATCH --error=logs/cram_to_bam_%A_%a.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=justren@iu.edu
 
@@ -57,4 +55,4 @@ samtools view \
 #Index the output BAM
 samtools index -@ ${SLURM_CPUS_PER_TASK} "${OUTPUT_BAM}"
 
-echo "Finished at : $(date)
+echo "Finished at : $(date)"
