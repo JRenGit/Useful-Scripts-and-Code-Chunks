@@ -38,8 +38,10 @@ rule cram_to_bam:
         mapq=20
     threads: 4
     resources:
-        mem_mb=64000,
+        mem_mb=32000,
         runtime=2880,
+    envmodules:
+        "samtools",
     log:
         "logs/{sample}_cram_to_bam.log",
     shell:
@@ -81,7 +83,7 @@ rule modkit_pileup_6mA:
         bed=lambda wc: SAMPLES[wc.sample]["pileup"],
     threads: 4
     resources:
-        mem_mb=32000,
+        mem_mb=64000,
         runtime=2880,
     envmodules:
         "samtools",
