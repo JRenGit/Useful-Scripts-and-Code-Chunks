@@ -1,0 +1,9 @@
+snakemake \
+  --executor slurm \
+  --jobs 10 \
+  --default-resources \
+      slurm_account=r00302 \
+      slurm_partition=general \
+  --latency-wait 60 \
+  --rerun-incomplete \
+  --printshellcmds
