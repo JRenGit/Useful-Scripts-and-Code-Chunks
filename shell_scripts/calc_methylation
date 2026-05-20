@@ -1,129 +1,38 @@
-#!/usr/bin/env Rscript
-library(data.table)
-library(ggplot2)
-library(gridExtra)
-
-# Explicitly limit threads. Excessive threading on high-core machines 
-# causes massive memory allocation multipliers.
-setDTthreads(4)
-
-# Parse Arguments
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 2) {
-    stop("Usage: Rscript calc_correlation.R <sample1_bed> <sample2_bed> [min_coverage]")
-}
-
-file1 <- args[1]
-file2 <- args[2]
-min_cov <- if (length(args) == 3) as.numeric(args[3]) else 10
-
 load_6ma_beta <- function(file_path, is_sample2 = FALSE) {
     cat(sprintf("Processing %s...\n", basename(file_path)))
 
-    # AWK FILTER: Filters for 'a' and drops 8 unused text columns to save memory
-    # Maps out: 1=chrom, 2=start, 3=end, 4=mod, 10=coverage, 12=n_mod, 13=n_canonical, 14=n_othermod
-    cmd <- paste0("zcat ", file_path, " | awk '$4 == \"a\" {print $1, $2, $3, $4, $10, $12, $13, $14}'")
-    
-    # Read the streamlined text stream
-    dt <- fread(cmd = cmd, header = FALSE)
+    cov_filter <- if (is_sample2) " && $10 <= 200" else ""
 
-    if(nrow(dt) == 0) {
+    # Precompute modified (n_mod + n_othermod) and total (coverage) in AWK.
+    # Avoids carrying 3 separate count columns into R — they are only ever summed.
+    # $10 = coverage, $12 = n_mod, $13 = n_canonical, $14 = n_othermod
+    cmd <- sprintf(
+        "zcat %s | awk '$4 == \"a\"%s {print $1, $2, $3, $10, $12+$14}'",
+        file_path, cov_filter
+    )
+
+    dt <- fread(
+        cmd = cmd,
+        header = FALSE,
+        col.names = c("chromosome", "start_pos", "end_pos", "T_strand", "M_strand"),
+        colClasses = c("character", "integer", "integer", "integer", "integer")
+    )
+
+    if (nrow(dt) == 0L) {
         cat(sprintf("Warning: No 'a' sites found in %s\n", basename(file_path)))
         return(NULL)
     }
 
-    # Explicitly name the 8 columns we told awk to output
-    cols <- c("chromosome", "start_pos", "end_pos", "modification", 
-              "coverage", "n_mod", "n_canonical", "n_othermod")
-    colnames(dt) <- cols
-
-    # Drop the modification column immediately since they are all 'a'
-    dt[, modification := NULL]
-
-    if (is_sample2) {
-        cat("Applying 200X read count filter to Sample 2...\n")
-        dt <- dt[coverage <= 200]
-    }
-    
-    # Convert types in-place to prevent calculation overflows
-    dt[, `:=`(n_mod = as.numeric(n_mod), 
-              n_othermod = as.numeric(n_othermod), 
-              n_canonical = as.numeric(n_canonical))]
-
-    # Aggregate/Collapse Strands
     cat("Collapsing strands...\n")
+    # Cast inside the aggregation expression to guard against int32 overflow in sum()
     dt_collapsed <- dt[, .(
-        M = sum(n_mod + n_othermod),
-        T = sum(n_mod + n_othermod + n_canonical)
+        M = sum(as.numeric(M_strand)),
+        T = sum(as.numeric(T_strand))
     ), by = .(chromosome, start_pos, end_pos)]
-    
-    rm(dt)
-    gc()
-    
-    # Filter by min coverage and compute beta in-place
+
+    rm(dt); gc()
+
     dt_collapsed <- dt_collapsed[T >= min_cov]
     dt_collapsed[, beta := M / T]
-    
-    return(dt_collapsed)
+    dt_collapsed
 }
-
-# Load tables sequentially with aggressive memory clearing
-dt1 <- load_6ma_beta(file1, is_sample2 = FALSE)
-gc() 
-
-dt2 <- load_6ma_beta(file2, is_sample2 = TRUE)
-gc()
-
-# Indexing keys speeds up data.table merging significantly
-setkey(dt1, chromosome, start_pos, end_pos)
-setkey(dt2, chromosome, start_pos, end_pos)
-
-cat("Merging datasets...\n")
-merged_dt <- dt1[dt2, nomatch = NULL, suffix = c("1", "2")]
-
-rm(dt1, dt2)
-gc()
-
-# Filter data
-filtered_dt <- merged_dt[beta1 > 0 & beta2 > 0 & T1 >= 10 & T2 >= 10]
-rm(merged_dt)
-gc()
-
-# Random Downsample to 500k
-set.seed(42) 
-if (nrow(filtered_dt) > 500000) {
-    plot_dt <- filtered_dt[sample(.N, 500000)]
-} else {
-    plot_dt = filtered_dt
-}
-rm(filtered_dt)
-gc()
-
-# Compute differences on small sample
-plot_dt[, `:=`(beta_diff = beta1 - beta2,
-               m_diff = M1 - M2,
-               t_diff = T1 - T2)]
-
-# Visualizations
-cat("Generating plots...\n")
-p1 <- ggplot(plot_dt, aes(x = beta_diff)) +
-    geom_histogram(binwidth = 0.01, fill = "steelblue", color = "white") +
-    theme_minimal() +
-    labs(title = "Beta Difference (β1 - β2)", x = "Difference", y = "Count")
-
-p2 <- ggplot(plot_dt, aes(x = m_diff)) +
-    geom_histogram(binwidth = 1, fill = "darkorange", color = "white") +
-    coord_cartesian(xlim = quantile(plot_dt$m_diff, c(0.001, 0.999), na.rm=TRUE)) + 
-    theme_minimal() +
-    labs(title = "Modified Count Difference (M1 - M2)", x = "Integer Difference", y = "Count")
-
-p3 <- ggplot(plot_dt, aes(x = t_diff)) +
-    geom_histogram(binwidth = 1, fill = "forestgreen", color = "white") +
-    coord_cartesian(xlim = quantile(plot_dt$t_diff, c(0.001, 0.999), na.rm=TRUE)) + 
-    theme_minimal() +
-    labs(title = "Total Coverage Difference (T1 - T2)", x = "Integer Difference", y = "Count")
-
-combined_plot <- grid.arrange(p1, p2, p3, ncol = 1)
-ggsave("modification_comparisons.png", combined_plot, width = 8, height = 12)
-
-cat("Comparison plots saved to modification_comparisons.png\n")
